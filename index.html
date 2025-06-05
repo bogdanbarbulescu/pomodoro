@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer Personalizabil</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px; /* Ajustat pentru mobile-first */
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px; /* Ajustat ușor */
+            padding: 20px; /* Ajustat pentru mobile-first */
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1); /* Ajustat ușor */
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+            background-size: 400% 400%;
+            animation: gradientShift 3s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px; /* Ajustat */
+            font-size: 2em; /* Ajustat pentru mobile-first */
+            font-weight: 300;
+        }
+
+        .progress-ring {
+            position: relative;
+            width: 160px; /* Ajustat pentru mobile-first */
+            height: 160px; /* Ajustat pentru mobile-first */
+            margin: 20px auto;
+            display: flex; /* Pentru centrarea textului timer-ului */
+            align-items: center; /* Pentru centrarea textului timer-ului */
+            justify-content: center; /* Pentru centrarea textului timer-ului */
+        }
+
+        .progress-ring svg {
+            position: absolute; /* Permite suprapunerea textului */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-circle {
+            fill: none;
+            stroke-width: 8; /* Păstrăm grosimea liniei */
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease, stroke 0.3s ease;
+        }
+
+        .progress-ring-bg {
+            stroke: #e0e0e0;
+        }
+
+        .progress-ring-progress {
+            stroke: #667eea;
+        }
+
+        .timer-display {
+            font-size: 2.8em; /* Ajustat pentru mobile-first */
+            font-weight: 700;
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Ajustat ușor */
+            transition: all 0.3s ease;
+            position: relative; /* Asigură că e deasupra SVG-ului */
+            z-index: 1;
+            margin: 0; /* Eliminăm marginile dacă e centrat cu flex */
+        }
+
+        .timer-display.pulse {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); } /* Ajustat ușor */
+        }
+
+        .session-info {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px; /* Ajustat */
+            border-radius: 12px; /* Ajustat */
+            margin: 15px 0; /* Ajustat */
+            font-size: 1em; /* Ajustat pentru mobile-first */
+            font-weight: 500;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column; /* Mobile-first: butoane pe coloană */
+            gap: 10px; /* Spațiu redus pentru mobil */
+            justify-content: center;
+            margin: 20px 0; /* Ajustat */
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 20px; /* Ajustat pentru mobile-first */
+            border-radius: 50px;
+            font-size: 1em; /* Ajustat pentru mobile-first */
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Centrează iconița și textul */
+            gap: 8px; /* Spațiu redus */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); /* Ajustat */
+            width: 100%; /* Butoanele ocupă toată lățimea pe mobil */
+        }
+
+        button:hover {
+            transform: translateY(-2px); /* Efect subtil */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); /* Ajustat */
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .settings {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px; /* Ajustat */
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .settings h3 {
+            color: #2c3e50;
+            margin-bottom: 15px; /* Ajustat */
+            text-align: center;
+            font-size: 1.3em; /* Ajustat */
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column; /* Mobile-first: label deasupra inputului */
+            align-items: flex-start; /* Aliniază la stânga pe mobil */
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            gap: 8px; /* Spațiu între label și input */
+        }
+
+        .setting-group label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        input[type="number"], select {
+            padding: 10px 12px; /* Padding mai mare pentru tap */
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            width: 100%; /* Ocupă toată lățimea disponibilă */
+            text-align: left; /* Aliniază textul la stânga */
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr; /* O singură coloană pe mobil */
+            gap: 10px; /* Spațiu redus */
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px; /* Ajustat */
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8em; /* Ajustat */
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8em; /* Ajustat */
+            opacity: 0.9;
+        }
+
+        .notification {
+            position: fixed;
+            top: 10px; /* Ajustat */
+            left: 10px; /* Ajustat */
+            right: 10px; /* Ajustat */
+            padding: 15px 20px; /* Ajustat */
+            background: #2ecc71;
+            color: white;
+            border-radius: 8px;
+            font-weight: 600;
+            transform: translateY(-200px); /* Poziție inițială pentru animație de sus */
+            transition: transform 0.4s ease-in-out; /* Tranzitie mai smooth */
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .notification.show {
+            transform: translateY(0);
+        }
+
+        .notification.warning {
+            background: #f39c12;
+        }
+
+        .hidden {
+            display: none !important; /* Asigură ascunderea */
+        }
+
+        /* Media Query pentru ecrane mai mari (tablete și desktop) */
+        @media (min-width: 640px) {
+            body {
+                padding: 20px;
+            }
+
+            .container {
+                padding: 30px; /* Mărim padding-ul containerului */
+            }
+
+            h1 {
+                font-size: 2.5em;
+                margin-bottom: 25px;
+            }
+
+            .progress-ring {
+                width: 200px;
+                height: 200px;
+                margin: 25px auto;
+            }
+
+            .timer-display {
+                font-size: 3.5em; /* Mărim textul timer-ului */
+            }
+
+            .session-info {
+                font-size: 1.1em;
+                padding: 15px;
+                margin: 20px 0;
+            }
+
+            .controls {
+                flex-direction: row; /* Butoanele revin pe rând */
+                flex-wrap: wrap; /* Permite trecerea pe rândul următor dacă nu încap */
+                gap: 15px;
+                margin: 25px 0;
+            }
+
+            button {
+                width: auto; /* Lățime automată pentru butoane */
+                padding: 15px 25px; /* Padding mai mare */
+                font-size: 1.05em;
+                gap: 10px;
+            }
+
+            .settings {
+                padding: 25px;
+            }
+            
+            .settings h3 {
+                font-size: 1.4em;
+                margin-bottom: 20px;
+            }
+
+            .setting-group {
+                flex-direction: row; /* Label și input pe același rând */
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+            }
+
+            input[type="number"], select {
+                width: 80px; /* Lățime fixă pentru input-uri */
+                text-align: center;
+            }
+
+            .stats {
+                grid-template-columns: repeat(3, 1fr); /* 3 coloane pentru statistici */
+                gap: 15px;
+                margin: 25px 0;
+            }
+
+            .stat-item {
+                padding: 15px;
+            }
+    
+            .stat-number {
+                font-size: 2em;
+            }
+    
+            .stat-label {
+                font-size: 0.9em;
+            }
+
+            .notification {
+                top: 20px;
+                right: 20px;
+                left: auto; /* Anulăm left pentru poziționare la dreapta */
+                transform: translateX(400px); /* Poziție inițială pentru animație din dreapta */
+                width: auto; /* Lățime automată */
+                max-width: 350px; /* Lățime maximă */
+            }
+
+            .notification.show {
+                transform: translateX(0);
+            }
+        }
+
+        /* Optimizări suplimentare pentru ecrane și mai mari, dacă este necesar */
+        @media (min-width: 768px) {
+            .container {
+                padding: 40px;
+            }
+            .timer-display {
+                font-size: 4em;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-clock"></i> Pomodoro Timer</h1>
+        
+        <div class="progress-ring">
+            <!-- Adăugăm viewBox pentru scalabilitate SVG -->
+            <svg viewBox="0 0 200 200">
+                <circle class="progress-ring-circle progress-ring-bg" cx="100" cy="100" r="90"></circle>
+                <circle class="progress-ring-circle progress-ring-progress" cx="100" cy="100" r="90" 
+                        stroke-dasharray="565.48" stroke-dashoffset="565.48"></circle>
+            </svg>
+            <div class="timer-display" id="timer">25:00</div>
+        </div>
+
+        <div class="session-info" id="sessionInfo">
+            <i class="fas fa-play-circle"></i> Sesiune de Lucru - Ciclul 1
+        </div>
+
+        <div class="controls">
+            <button id="startBtn"><i class="fas fa-play"></i> Start</button>
+            <button id="pauseBtn" class="secondary hidden"><i class="fas fa-pause"></i> Pauză</button>
+            <button id="resetBtn" class="danger"><i class="fas fa-stop"></i> Reset</button>
+            <button id="settingsBtn" class="secondary"><i class="fas fa-cog"></i> Setări</button>
+        </div>
+
+        <div class="settings hidden" id="settings">
+            <h3><i class="fas fa-sliders-h"></i> Personalizare Timp</h3>
+            
+            <div class="setting-group">
+                <label for="workDuration">Sesiune Lucru (min):</label>
+                <input type="number" id="workDuration" value="25" min="1" max="60">
+            </div>
+            
+            <div class="setting-group">
+                <label for="shortBreakDuration">Pauză Scurtă (min):</label>
+                <input type="number" id="shortBreakDuration" value="5" min="1" max="30">
+            </div>
+            
+            <div class="setting-group">
+                <label for="longBreakDuration">Pauză Lungă (min):</label>
+                <input type="number" id="longBreakDuration" value="15" min="1" max="60">
+            </div>
+            
+            <div class="setting-group">
+                <label for="longBreakInterval">Pauză Lungă la fiecare:</label>
+                <select id="longBreakInterval">
+                    <option value="4">4 cicluri</option>
+                    <option value="3">3 cicluri</option>
+                    <option value="5">5 cicluri</option>
+                    <option value="6">6 cicluri</option>
+                </select>
+            </div>
+            
+            <div class="setting-group">
+                <label for="soundEnabled">Alerte Sonore:</label>
+                <select id="soundEnabled">
+                    <option value="true">Activate</option>
+                    <option value="false">Dezactivate</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-number" id="completedSessions">0</span>
+                <span class="stat-label">Sesiuni Complete</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="totalTime">0h</span>
+                <span class="stat-label">Timp Total</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="currentCycle">1</span>
+                <span class="stat-label">Ciclul Curent</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        class PomodoroTimer {
+            constructor() {
+                this.isRunning = false;
+                this.currentTime = 25 * 60; 
+                this.isWorkSession = true;
+                this.currentCycle = 1;
+                this.completedSessions = 0;
+                this.totalWorkTime = 0;
+                this.timer = null;
+                
+                this.workDuration = 25;
+                this.shortBreakDuration = 5;
+                this.longBreakDuration = 15;
+                this.longBreakInterval = 4;
+                this.soundEnabled = true;
+                
+                this.timerDisplay = document.getElementById('timer');
+                this.sessionInfo = document.getElementById('sessionInfo');
+                this.startBtn = document.getElementById('startBtn');
+                this.pauseBtn = document.getElementById('pauseBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.settingsBtn = document.getElementById('settingsBtn');
+                this.settingsPanel = document.getElementById('settings');
+                this.progressCircle = document.querySelector('.progress-ring-progress');
+                this.notification = document.getElementById('notification');
+                
+                // Rază fixă pentru calculul circumferinței, corespunzătoare viewBox-ului SVG
+                this.radius = 90; 
+                this.circumference = 2 * Math.PI * this.radius;
+                // stroke-dasharray este setat direct în HTML și CSS, dar JS îl folosește pentru calculul progresului
+                // Asigură-te că valoarea din HTML/CSS (565.48) corespunde cu this.circumference
+                this.progressCircle.style.strokeDasharray = this.circumference;
+                this.progressCircle.style.strokeDashoffset = this.circumference; // Inițial, cercul este "gol"
+                
+                this.loadSettings();
+                this.bindEvents();
+                this.updateDisplay(); // Actualizează afișajul inițial
+                this.updateStats();
+                this.requestNotificationPermission();
+
+                // Stochează instanța timerului global pentru eventul beforeunload
+                window.pomodoroTimerInstance = this; 
+            }
+            
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.start());
+                this.pauseBtn.addEventListener('click', () => this.pause());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                this.settingsBtn.addEventListener('click', () => this.toggleSettings());
+                
+                document.getElementById('workDuration').addEventListener('change', (e) => {
+                    this.workDuration = parseInt(e.target.value);
+                    this.saveSettings();
+                    if (!this.isRunning && this.isWorkSession) {
+                        this.currentTime = this.workDuration * 60;
+                        this.updateDisplay();
+                    }
+                });
+                
+                document.getElementById('shortBreakDuration').addEventListener('change', (e) => {
+                    this.shortBreakDuration = parseInt(e.target.value);
+                    this.saveSettings();
+                     if (!this.isRunning && !this.isWorkSession && (this.currentCycle % this.longBreakInterval !== 0)) {
+                        this.currentTime = this.shortBreakDuration * 60;
+                        this.updateDisplay();
+                    }
+                });
+                
+                document.getElementById('longBreakDuration').addEventListener('change', (e) => {
+                    this.longBreakDuration = parseInt(e.target.value);
+                    this.saveSettings();
+                    if (!this.isRunning && !this.isWorkSession && (this.currentCycle % this.longBreakInterval === 0)) {
+                        this.currentTime = this.longBreakDuration * 60;
+                        this.updateDisplay();
+                    }
+                });
+                
+                document.getElementById('longBreakInterval').addEventListener('change', (e) => {
+                    this.longBreakInterval = parseInt(e.target.value);
+                    this.saveSettings();
+                });
+                
+                document.getElementById('soundEnabled').addEventListener('change', (e) => {
+                    this.soundEnabled = e.target.value === 'true';
+                    this.saveSettings();
+                });
+            }
+            
+            start() {
+                if (this.isRunning) return; // Previne multiple intervale
+                this.isRunning = true;
+                this.startBtn.classList.add('hidden');
+                this.pauseBtn.classList.remove('hidden');
+                this.timerDisplay.classList.add('pulse');
+                
+                // Asigură-te că timpul curent este corect înainte de a începe
+                if (this.currentTime <= 0) { 
+                    // Dacă timpul a expirat și se apasă start, resetează la sesiunea curentă
+                    if (this.isWorkSession) {
+                        this.currentTime = this.workDuration * 60;
+                    } else {
+                        this.currentTime = (this.currentCycle % this.longBreakInterval === 0) ? 
+                                           this.longBreakDuration * 60 : this.shortBreakDuration * 60;
+                    }
+                }
+                this.updateDisplay(); // Actualizează imediat afișajul
+
+                this.timer = setInterval(() => {
+                    this.currentTime--;
+                    this.updateDisplay();
+                    
+                    if (this.currentTime < 0) { // Folosim < 0 pentru a prinde exact momentul trecerii
+                        this.sessionComplete();
+                    }
+                }, 1000);
+            }
+            
+            pause() {
+                this.isRunning = false;
+                this.pauseBtn.classList.add('hidden');
+                this.startBtn.classList.remove('hidden');
+                this.timerDisplay.classList.remove('pulse');
+                clearInterval(this.timer);
+            }
+            
+            reset() {
+                this.pause();
+                this.isWorkSession = true;
+                this.currentCycle = 1; // Resetăm și ciclul
+                this.completedSessions = 0; // Resetăm sesiunile completate
+                this.totalWorkTime = 0; // Resetăm timpul total
+                this.currentTime = this.workDuration * 60;
+                this.updateDisplay();
+                this.updateStats(); // Actualizăm și statisticile
+                this.showNotification('Timer resetat!', 'warning');
+            }
+            
+            sessionComplete() {
+                this.pause(); // Oprește timerul curent
+                
+                if (this.isWorkSession) {
+                    this.completedSessions++;
+                    this.totalWorkTime += this.workDuration;
+                    
+                    if (this.currentCycle % this.longBreakInterval === 0) {
+                        this.isWorkSession = false;
+                        this.currentTime = this.longBreakDuration * 60;
+                        this.showNotification('Sesiune completă! Pauză lungă!');
+                        this.sendDesktopNotification('🎉 Sesiune Completă!', `Timp pentru o pauză lungă de ${this.longBreakDuration} minute!`);
+                    } else {
+                        this.isWorkSession = false;
+                        this.currentTime = this.shortBreakDuration * 60;
+                        this.showNotification('Sesiune completă! Pauză scurtă!');
+                        this.sendDesktopNotification('✅ Sesiune Completă!', `Timp pentru o pauză scurtă de ${this.shortBreakDuration} minute!`);
+                    }
+                } else {
+                    this.isWorkSession = true;
+                    this.currentTime = this.workDuration * 60;
+                    this.currentCycle++;
+                    this.showNotification('Pauză terminată! La treabă!');
+                    this.sendDesktopNotification('⏰ Pauză Terminată!', `Să revenim la lucru pentru ${this.workDuration} minute!`);
+                }
+                
+                this.playSound();
+                this.updateDisplay();
+                this.updateStats();
+                // Opțional: pornește automat următoarea sesiune/pauză
+                // this.start(); 
+            }
+            
+            updateDisplay() {
+                const minutes = Math.floor(Math.max(0, this.currentTime) / 60); // Asigură non-negativ
+                const seconds = Math.max(0, this.currentTime) % 60; // Asigură non-negativ
+                const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                this.timerDisplay.textContent = timeString;
+                
+                const sessionTypeBase = this.isWorkSession ? 'Sesiune de Lucru' : 
+                    ((this.currentCycle % this.longBreakInterval === 0 && !this.isWorkSession) ? 'Pauză Lungă' : 'Pauză Scurtă');
+                const icon = this.isWorkSession ? 'fa-laptop-code' : 'fa-coffee';
+                this.sessionInfo.innerHTML = `<i class="fas ${icon}"></i> ${sessionTypeBase} - Ciclul ${this.currentCycle}`;
+                
+                const totalDurationForCurrentSession = this.isWorkSession ? this.workDuration * 60 : 
+                    ((this.currentCycle % this.longBreakInterval === 0 && !this.isWorkSession) ? this.longBreakDuration * 60 : this.shortBreakDuration * 60);
+                
+                // Asigură că progresul nu devine negativ sau peste 100%
+                const elapsed = Math.max(0, totalDurationForCurrentSession - Math.max(0, this.currentTime));
+                const progressRatio = totalDurationForCurrentSession > 0 ? elapsed / totalDurationForCurrentSession : 0;
+                const offset = this.circumference * (1 - progressRatio);
+                
+                this.progressCircle.style.strokeDashoffset = Math.max(0, Math.min(this.circumference, offset));
+                this.progressCircle.style.stroke = this.isWorkSession ? '#667eea' : '#2ecc71';
+                
+                document.title = `${timeString} - ${sessionTypeBase} | Pomodoro Timer`;
+            }
+            
+            updateStats() {
+                document.getElementById('completedSessions').textContent = this.completedSessions;
+                const hours = Math.floor(this.totalWorkTime / 60);
+                const minutes = this.totalWorkTime % 60;
+                document.getElementById('totalTime').textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                document.getElementById('currentCycle').textContent = this.currentCycle;
+            }
+            
+            toggleSettings() {
+                this.settingsPanel.classList.toggle('hidden');
+            }
+            
+            showNotification(message, type = 'success') {
+                this.notification.textContent = message;
+                this.notification.className = `notification show ${type}`; // Adaugă și clasa de tip
+                
+                setTimeout(() => {
+                    this.notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            playSound() {
+                if (!this.soundEnabled || typeof AudioContext === "undefined" && typeof webkitAudioContext === "undefined") return;
+                
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.type = 'sine'; // Un sunet mai plăcut
+                    oscillator.frequency.setValueAtTime(660, audioContext.currentTime); // La
+                    oscillator.frequency.exponentialRampToValueAtTime(880, audioContext.currentTime + 0.1); // Do
+                    
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Volum redus
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                } catch (error) {
+                    console.error("Eroare la redarea sunetului:", error);
+                }
+            }
+            
+            requestNotificationPermission() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            this.showNotification('Notificările desktop au fost activate!', 'success');
+                        } else {
+                            this.showNotification('Notificările desktop nu au fost permise.', 'warning');
+                        }
+                    });
+                }
+            }
+            
+            sendDesktopNotification(title, body) {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: body,
+                        // Poți adăuga o iconiță personalizată aici (URL sau base64)
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM2NjdlZWEiLz4KPHBhdGggZD0iTTMyIDIwQzI4LjY4NjMgMjAgMjYgMjIuNjg2MyAyNiAyNkMyNiAyOS4zMTM3IDI4LjY4NjMgMzIgMzIgMzJDMzUuMzEzNyAzMiAzOCAyOS4zMTM3IDM4IDI2QzM4IDIyLjY4NjMgMzUuMzEzNyAyMCAzMiAyMFpNMzIgMzBDMjkuNzkwOSAzMCAyOCAyOC4yMDkxIDI4IDI2QzI4IDIzLjc5MDkgMjkuNzkwOSAyMiAzMiAyMkMzNC4yMDkxIDIyIDM2IDIzLjc5MDkgMzYgMjZDMzYgMjguMjA5MSAzNC4yMDkxIDMwIDMyIDMwWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTMyIDE0QzIzLjE2MzQgMTQgMTYgMjEuMTYzNCAxNiAzMFY0MEgxNFY0NEg1MFY0MEg0OFYzMEM0OCAyMS4xNjM0IDQwLjgzNjYgMTQgMzIgMTRaTTQ0IDQySDIRMjBWNDRIMzBDMzAgNDQgMzIgNDQgMzIgNDRIMzRDMzQgNDQgMzYgNDQgMzYgNDJIMzZWMzBDMzYgMjMuMzcxNiA0MC4zNzE2IDE4IDQ0IDE4QzQ1LjY1NjkgMTggNDggMjAuMzQzMSA0OCAyNFY0MloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg=='
+                    });
+                }
+            }
+            
+            saveSettings() {
+                const settings = {
+                    workDuration: this.workDuration,
+                    shortBreakDuration: this.shortBreakDuration,
+                    longBreakDuration: this.longBreakDuration,
+                    longBreakInterval: this.longBreakInterval,
+                    soundEnabled: this.soundEnabled,
+                    completedSessions: this.completedSessions,
+                    totalWorkTime: this.totalWorkTime,
+                    currentCycle: this.currentCycle
+                };
+                
+                try {
+                    localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
+                } catch (e) {
+                    console.warn("LocalStorage nu este disponibil. Setările nu vor fi salvate permanent.");
+                    window.pomodoroSettingsFallback = settings; // Salvare în memorie ca fallback
+                }
+            }
+            
+            loadSettings() {
+                let settings = null;
+                try {
+                    settings = JSON.parse(localStorage.getItem('pomodoroSettings'));
+                } catch (e) {
+                    console.warn("Nu s-au putut încărca setările din LocalStorage.");
+                    settings = window.pomodoroSettingsFallback; // Încercare fallback din memorie
+                }
+
+                if (settings) {
+                    this.workDuration = parseInt(settings.workDuration) || 25;
+                    this.shortBreakDuration = parseInt(settings.shortBreakDuration) || 5;
+                    this.longBreakDuration = parseInt(settings.longBreakDuration) || 15;
+                    this.longBreakInterval = parseInt(settings.longBreakInterval) || 4;
+                    this.soundEnabled = settings.soundEnabled !== undefined ? settings.soundEnabled : true;
+                    this.completedSessions = parseInt(settings.completedSessions) || 0;
+                    this.totalWorkTime = parseInt(settings.totalWorkTime) || 0;
+                    this.currentCycle = parseInt(settings.currentCycle) || 1;
+                    
+                    document.getElementById('workDuration').value = this.workDuration;
+                    document.getElementById('shortBreakDuration').value = this.shortBreakDuration;
+                    document.getElementById('longBreakDuration').value = this.longBreakDuration;
+                    document.getElementById('longBreakInterval').value = this.longBreakInterval;
+                    document.getElementById('soundEnabled').value = this.soundEnabled.toString();
+                }
+                // Setează timpul curent bazat pe setările încărcate, dacă timerul nu rulează
+                if (!this.isRunning) {
+                     this.currentTime = this.isWorkSession ? this.workDuration * 60 : 
+                                     ( (this.currentCycle % this.longBreakInterval === 0) ? 
+                                       this.longBreakDuration * 60 : this.shortBreakDuration * 60 );
+                }
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            new PomodoroTimer();
+        });
+        
+        window.addEventListener('beforeunload', (e) => {
+            // Accesăm instanța stocată
+            if (window.pomodoroTimerInstance && window.pomodoroTimerInstance.isRunning) {
+                e.preventDefault();
+                e.returnValue = 'Aveți o sesiune Pomodoro activă. Sigur doriți să părăsiți pagina?';
+            }
+        });
+    </script>
+</body>
+</html>
